@@ -8,40 +8,74 @@ import java.net.*;
 import java.time.LocalDateTime;
 
 public class Server {
+    static int clientCount = 0;
     public static void main(String a[]) throws IOException {
         int maxPendingConn = 10;
-        int port = 4444;
-        Socket sock;
+        final int port = 4444;
         ServerSocket servsock = new ServerSocket(port, maxPendingConn);
 
         System.out.println("The server is running");
 
         while (true) {
             // wait for the next client connection
+            Socket sock;
             sock=servsock.accept();
+            clientCount++;
+            new ServerThread(sock, clientCount).start();
+        }
+    }
+}
 
-            // Get I/O streams from the socket
-            PrintStream out = new PrintStream( sock.getOutputStream() );
-            InputStreamReader isr  = new InputStreamReader( sock.getInputStream() );
-            BufferedReader in  = new BufferedReader( isr );
+class ServerThread extends Thread {
+    protected Socket sock;
+    protected int clientNumber;
 
-            out.print(LocalDateTime.now() + "\r\n" );
-            out.flush();
-            // Accept the request
-            String request = in.readLine();
+    public ServerThread(Socket clientSocket, int clientNumber) {
+        this.sock = clientSocket;
+        this.clientNumber = clientNumber;
+    }
 
-            System.out.println(request);
-            // The request was read as a String.
-            // It needs to be converted to an integer
+    public void run() {
+        // Get I/O streams from the socket
+        PrintStream out = null;
+        try {
+            out = new PrintStream( sock.getOutputStream() );
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        InputStreamReader isr  = null;
+        try {
+            isr = new InputStreamReader( sock.getInputStream() );
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        BufferedReader in  = new BufferedReader( isr );
 
-//            int parameter = (new Integer(request)).intValue();
+        boolean hasValue = true;
+        out.print("Hello, you are client #"+ this.clientNumber+ "\r\n" );
+        out.flush();
 
-//            int result = parameter*parameter;
-//            out.print(result + "\r\n" );
-//            out.flush();
-
-            // Close this connection, (not the overall server socket)
-            sock.close();
+        while(hasValue) {
+            String request = null;
+            try {
+                request = in.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (request.equals("time")) {
+                out.print(LocalDateTime.now() + "\r\n" );
+                out.flush();
+            } else if (request.isEmpty()) {
+                try {
+                    sock.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                hasValue = false;
+            } else {
+                out.print(request.toUpperCase() + "\r\n" );
+                out.flush();
+            }
         }
     }
 }

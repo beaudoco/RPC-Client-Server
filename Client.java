@@ -13,11 +13,12 @@ public class Client {
         Socket sock;
         BufferedReader dis;
         PrintWriter dat;
+        boolean hasValue = true;
 
         System.out.println("Please give a server IP address");
         Scanner in = new Scanner(System.in);
         String s = in.nextLine();
-        System.out.println("You entered string "+s);
+        //System.out.println("You entered string "+s);
         // Open our connection to localhost, at port 4444
         // if you try this on your system, insert your system name
         // in place of "localhost". For instance:
@@ -26,30 +27,33 @@ public class Client {
         sock = new Socket(s,4444);
 
         // Get I/O streams from the socket
+
+        // Declare server response and string that will be sent to server
+        String fromServer = "";
+        String parameter = "";
+
         dis = new BufferedReader( new InputStreamReader(sock.getInputStream()) );
-        dat = new PrintWriter( sock.getOutputStream() );
+        fromServer = dis.readLine();
+        System.out.println("Got this from server: " + fromServer);
 
-        String currentDate = dis.readLine();
-        System.out.println("Got this from server: " + currentDate);
+        while(hasValue) {
+            String msg = in.nextLine();
 
-        // Make sure that one parameter was passed in the command line
-//        if (arg.length != 1) {
-//            System.out.println("Please pass one parameter in the command line.");
-//            System.exit(1);
-//        }
+            dis = new BufferedReader( new InputStreamReader(sock.getInputStream()) );
+            dat = new PrintWriter( sock.getOutputStream() );
+            System.out.println("You entered string "+msg);
+            parameter = msg;
+            dat.println(parameter);
+            dat.flush();
 
-//        int parameter = (new Integer(2)).intValue();
-//        String parameter = arg[0];
-        String parameter = "Received";
+            hasValue = !msg.isEmpty();
+            if (hasValue) {
+                fromServer = dis.readLine();
+                System.out.println("Got this from server: " + fromServer);
+            }
 
-        // Send the request to the server
+        }
 
-        dat.println(parameter);
-        dat.flush();
-        // Read the result back from the server
-        //String fromServer = dis.readLine();
-        // Print the result and close the connection
-        //System.out.println("Got this from server: " + fromServer);
         sock.close();
     }
 }
